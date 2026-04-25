@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Header } from "@/components/Header"
+import { Header } from "@/components/header"
 import { Bell, Moon, Globe, Lock, Trash2, Download, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 

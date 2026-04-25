@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { TodoItem } from "./todo-item"
 import { TodoInput } from "./todo-input"
-import { CheckCircle2, Circle, ListTodo } from "lucide-react"
+import { CheckCircle2, Circle, ListTodo, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { fetchTodos, createTodo, updateTodo, deleteTodo } from "@/lib/api"
 
 interface Todo {
   id: string
@@ -15,39 +17,65 @@ interface Todo {
 type FilterType = "all" | "active" | "completed"
 
 export function TodoList() {
-  const [todos, setTodos] = useState<Todo[]>([
-    { id: "1", text: "Review quarterly report", completed: false },
-    { id: "2", text: "Schedule team meeting", completed: true },
-    { id: "3", text: "Prepare presentation slides", completed: false },
-  ])
+  const router = useRouter()
+  const [todos, setTodos] = useState<Todo[]>([])
   const [filter, setFilter] = useState<FilterType>("all")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  const addTodo = (text: string) => {
-    const newTodo: Todo = {
-      id: Date.now().toString(),
-      text,
-      completed: false,
+  useEffect(() => {
+    const token = localStorage.getItem("ticked_token")
+    if (!token) {
+      router.push("/login")
+      return
     }
-    setTodos([newTodo, ...todos])
+    loadTodos()
+  }, [filter])
+
+  const loadTodos = async () => {
+    try {
+      setLoading(true)
+      const data = await fetchTodos(filter === "all" ? undefined : filter)
+      setTodos(data)
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes("token")) {
+        router.push("/login")
+      } else {
+        setError("Failed to load tasks")
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const toggleTodo = (id: string) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    )
+  const addTodo = async (text: string) => {
+    try {
+      const newTodo = await createTodo({ text })
+      setTodos([newTodo, ...todos])
+    } catch {
+      setError("Failed to add task")
+    }
   }
 
-  const deleteTodo = (id: string) => {
-    setTodos(todos.filter((todo) => todo.id !== id))
+  const toggleTodo = async (id: string) => {
+    const todo = todos.find((t) => t.id === id)
+    if (!todo) return
+    try {
+      const updated = await updateTodo(id, { completed: !todo.completed })
+      setTodos(todos.map((t) => (t.id === id ? updated : t)))
+    } catch {
+      setError("Failed to update task")
+    }
   }
 
-  const filteredTodos = todos.filter((todo) => {
-    if (filter === "active") return !todo.completed
-    if (filter === "completed") return todo.completed
-    return true
-  })
+  const deleteTodoItem = async (id: string) => {
+    try {
+      await deleteTodo(id)
+      setTodos(todos.filter((t) => t.id !== id))
+    } catch {
+      setError("Failed to delete task")
+    }
+  }
 
   const activeTodos = todos.filter((t) => !t.completed).length
   const completedTodos = todos.filter((t) => t.completed).length
@@ -87,9 +115,17 @@ export function TodoList() {
         <span>{completedTodos} completed</span>
       </div>
 
+      {error && (
+        <p className="text-sm text-destructive text-center">{error}</p>
+      )}
+
       {/* Todo Items */}
       <div className="space-y-3">
-        {filteredTodos.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : todos.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8" />
@@ -103,14 +139,14 @@ export function TodoList() {
             </p>
           </div>
         ) : (
-          filteredTodos.map((todo) => (
+          todos.map((todo) => (
             <TodoItem
               key={todo.id}
               id={todo.id}
               text={todo.text}
               completed={todo.completed}
               onToggle={toggleTodo}
-              onDelete={deleteTodo}
+              onDelete={deleteTodoItem}
             />
           ))
         )}
@@ -118,4 +154,3 @@ export function TodoList() {
     </div>
   )
 }
-

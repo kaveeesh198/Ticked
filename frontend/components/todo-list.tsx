@@ -12,6 +12,8 @@ interface Todo {
   id: string
   text: string
   completed: boolean
+  category_name?: string
+  category_color?: string
 }
 
 type FilterType = "all" | "active" | "completed"
@@ -25,10 +27,7 @@ export function TodoList() {
 
   useEffect(() => {
     const token = localStorage.getItem("ticked_token")
-    if (!token) {
-      router.push("/login")
-      return
-    }
+    if (!token) { router.push("/login"); return }
     loadTodos()
   }, [filter])
 
@@ -48,9 +47,10 @@ export function TodoList() {
     }
   }
 
-  const addTodo = async (text: string) => {
+  // Now accepts optional category_id
+  const addTodo = async (text: string, category_id?: number) => {
     try {
-      const newTodo = await createTodo({ text })
+      const newTodo = await createTodo({ text, category_id: category_id ?? null })
       setTodos([newTodo, ...todos])
     } catch {
       setError("Failed to add task")
@@ -81,9 +81,9 @@ export function TodoList() {
   const completedTodos = todos.filter((t) => t.completed).length
 
   const filters: { key: FilterType; label: string; icon: React.ReactNode }[] = [
-    { key: "all", label: "All", icon: <ListTodo className="w-4 h-4" /> },
-    { key: "active", label: "Active", icon: <Circle className="w-4 h-4" /> },
-    { key: "completed", label: "Done", icon: <CheckCircle2 className="w-4 h-4" /> },
+    { key: "all",       label: "All",    icon: <ListTodo className="w-4 h-4" /> },
+    { key: "active",    label: "Active", icon: <Circle className="w-4 h-4" /> },
+    { key: "completed", label: "Done",   icon: <CheckCircle2 className="w-4 h-4" /> },
   ]
 
   return (
@@ -115,9 +115,7 @@ export function TodoList() {
         <span>{completedTodos} completed</span>
       </div>
 
-      {error && (
-        <p className="text-sm text-destructive text-center">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
       {/* Todo Items */}
       <div className="space-y-3">
@@ -145,6 +143,8 @@ export function TodoList() {
               id={todo.id}
               text={todo.text}
               completed={todo.completed}
+              category_name={todo.category_name}
+              category_color={todo.category_color}
               onToggle={toggleTodo}
               onDelete={deleteTodoItem}
             />

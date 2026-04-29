@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { checkAchievements } = require("../services/achievementsService");
 
 // GET /api/todos
 const getTodos = async (req, res) => {
@@ -64,11 +65,13 @@ const updateTodo = async (req, res) => {
   try {
     // Verify ownership
     const check = await pool.query(
-      "SELECT id FROM todos WHERE id = $1 AND user_id = $2",
+      "SELECT id, completed FROM todos WHERE id = $1 AND user_id = $2",
       [id, req.user.id]
     );
     if (check.rows.length === 0)
       return res.status(404).json({ error: "Todo not found." });
+
+    const wasCompleted = check.rows[0].completed;
 
     const { rows } = await pool.query(
       `UPDATE todos
@@ -80,7 +83,15 @@ const updateTodo = async (req, res) => {
        RETURNING *`,
       [text?.trim() || null, completed ?? null, category_id || null, id, req.user.id]
     );
-    res.json(rows[0]);
+
+    const updatedTodo = rows[0];
+
+    // ── Trigger achievement check when a task is marked complete ──
+    if (!wasCompleted && updatedTodo.completed === true) {
+      checkAchievements(req.user.id); // fire-and-forget, don't block response
+    }
+
+    res.json(updatedTodo);
   } catch (err) {
     console.error("Update todo error:", err);
     res.status(500).json({ error: "Failed to update todo." });
@@ -106,7 +117,7 @@ const deleteTodo = async (req, res) => {
   }
 };
 
-// DELETE /api/todos/completed (clear all completed)
+// DELETE /api/todos/completed
 const clearCompleted = async (req, res) => {
   try {
     const { rowCount } = await pool.query(

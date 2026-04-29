@@ -127,7 +127,7 @@ export default function DashboardPage() {
             {activity.length === 0 ? (
               <p className="text-sm text-muted-foreground">No activity yet.</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-64 overflow-y-auto pr-1 scrollbar-thin">
                 {activity.map(({ action, task, time }, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <div className="mt-1">

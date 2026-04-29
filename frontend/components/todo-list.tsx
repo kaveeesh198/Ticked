@@ -12,6 +12,7 @@ interface Todo {
   id: string
   text: string
   completed: boolean
+  due_date?: string
   category_name?: string
   category_color?: string
 }
@@ -47,10 +48,9 @@ export function TodoList() {
     }
   }
 
-  // Now accepts optional category_id
-  const addTodo = async (text: string, category_id?: number) => {
+  const addTodo = async (text: string, category_id?: number, due_date?: string) => {
     try {
-      const newTodo = await createTodo({ text, category_id: category_id ?? null })
+      const newTodo = await createTodo({ text, category_id: category_id ?? null, due_date: due_date ?? null })
       setTodos([newTodo, ...todos])
     } catch {
       setError("Failed to add task")
@@ -90,7 +90,6 @@ export function TodoList() {
     <div className="space-y-6">
       <TodoInput onAdd={addTodo} />
 
-      {/* Filter Tabs */}
       <div className="flex items-center gap-2 p-1 bg-secondary/50 rounded-lg">
         {filters.map(({ key, label, icon }) => (
           <button
@@ -109,7 +108,6 @@ export function TodoList() {
         ))}
       </div>
 
-      {/* Stats */}
       <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
         <span>{activeTodos} task{activeTodos !== 1 ? "s" : ""} remaining</span>
         <span>{completedTodos} completed</span>
@@ -117,7 +115,6 @@ export function TodoList() {
 
       {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
-      {/* Todo Items */}
       <div className="space-y-3">
         {loading ? (
           <div className="flex justify-center py-12">
@@ -129,10 +126,8 @@ export function TodoList() {
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <p className="font-medium">
-              {filter === "completed"
-                ? "No completed tasks yet"
-                : filter === "active"
-                ? "All tasks completed!"
+              {filter === "completed" ? "No completed tasks yet"
+                : filter === "active" ? "All tasks completed!"
                 : "No tasks yet. Add one above."}
             </p>
           </div>
@@ -143,6 +138,7 @@ export function TodoList() {
               id={todo.id}
               text={todo.text}
               completed={todo.completed}
+              due_date={todo.due_date}
               category_name={todo.category_name}
               category_color={todo.category_color}
               onToggle={toggleTodo}

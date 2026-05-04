@@ -7,6 +7,7 @@ import { TodoInput } from "./todo-input"
 import { CheckCircle2, Circle, ListTodo, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { fetchTodos, createTodo, updateTodo, deleteTodo } from "@/lib/api"
+import { playCompletionSound, isSoundEnabled } from "@/lib/sound"
 
 interface Todo {
   id: string
@@ -63,6 +64,11 @@ export function TodoList() {
     try {
       const updated = await updateTodo(id, { completed: !todo.completed })
       setTodos(todos.map((t) => (t.id === id ? updated : t)))
+
+      // 🔊 Play sound only when marking as COMPLETE and sounds are enabled
+      if (!todo.completed && isSoundEnabled()) {
+        playCompletionSound()
+      }
     } catch {
       setError("Failed to update task")
     }
@@ -90,6 +96,7 @@ export function TodoList() {
     <div className="space-y-6">
       <TodoInput onAdd={addTodo} />
 
+      {/* Filter Tabs */}
       <div className="flex items-center gap-2 p-1 bg-secondary/50 rounded-lg">
         {filters.map(({ key, label, icon }) => (
           <button
@@ -108,6 +115,7 @@ export function TodoList() {
         ))}
       </div>
 
+      {/* Stats */}
       <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
         <span>{activeTodos} task{activeTodos !== 1 ? "s" : ""} remaining</span>
         <span>{completedTodos} completed</span>
@@ -115,6 +123,7 @@ export function TodoList() {
 
       {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
+      {/* Todo Items */}
       <div className="space-y-3">
         {loading ? (
           <div className="flex justify-center py-12">
@@ -126,8 +135,10 @@ export function TodoList() {
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <p className="font-medium">
-              {filter === "completed" ? "No completed tasks yet"
-                : filter === "active" ? "All tasks completed!"
+              {filter === "completed"
+                ? "No completed tasks yet"
+                : filter === "active"
+                ? "All tasks completed!"
                 : "No tasks yet. Add one above."}
             </p>
           </div>

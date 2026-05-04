@@ -18,48 +18,60 @@ export function AnimatedBackground() {
     canvas.width = W
     canvas.height = H
 
-    // Warm brownish-yellow particle colors
-    const colors = [
+    const getLightColors = () => [
       "rgba(186, 117, 23, 0.18)",
       "rgba(239, 159, 39, 0.14)",
       "rgba(250, 199, 117, 0.12)",
       "rgba(133, 79, 11, 0.12)",
-      "rgba(250, 238, 218, 0.20)",
+      "rgba(250, 238, 218, 0.22)",
       "rgba(186, 117, 23, 0.10)",
     ]
 
-    // Particles
+    const getDarkColors = () => [
+      "rgba(186, 117, 23, 0.12)",
+      "rgba(239, 159, 39, 0.09)",
+      "rgba(101, 55, 8, 0.15)",
+      "rgba(133, 79, 11, 0.10)",
+      "rgba(60, 35, 5, 0.20)",
+      "rgba(200, 130, 30, 0.08)",
+    ]
+
+    const getColors = () =>
+      document.documentElement.classList.contains("dark")
+        ? getDarkColors()
+        : getLightColors()
+
     const particles = Array.from({ length: 28 }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
       r: Math.random() * 120 + 40,
       dx: (Math.random() - 0.5) * 0.3,
       dy: (Math.random() - 0.5) * 0.3,
-      color: colors[Math.floor(Math.random() * colors.length)],
+      colorIndex: Math.floor(Math.random() * 6),
       pulse: Math.random() * Math.PI * 2,
       pulseSpeed: Math.random() * 0.008 + 0.004,
     }))
 
-    // Small floating dots
     const dots = Array.from({ length: 40 }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
       r: Math.random() * 2.5 + 0.5,
       dx: (Math.random() - 0.5) * 0.4,
       dy: (Math.random() - 0.5) * 0.4,
-      opacity: Math.random() * 0.25 + 0.05,
+      opacity: Math.random() * 0.2 + 0.05,
     }))
 
     const draw = () => {
       ctx.clearRect(0, 0, W, H)
+      const colors = getColors()
+      const isDark = document.documentElement.classList.contains("dark")
 
-      // Draw soft orbs
       particles.forEach((p) => {
         p.pulse += p.pulseSpeed
         const pulsedR = p.r + Math.sin(p.pulse) * 12
 
         const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, pulsedR)
-        grad.addColorStop(0, p.color)
+        grad.addColorStop(0, colors[p.colorIndex])
         grad.addColorStop(1, "rgba(0,0,0,0)")
 
         ctx.beginPath()
@@ -69,23 +81,22 @@ export function AnimatedBackground() {
 
         p.x += p.dx
         p.y += p.dy
-
         if (p.x < -p.r) p.x = W + p.r
         if (p.x > W + p.r) p.x = -p.r
         if (p.y < -p.r) p.y = H + p.r
         if (p.y > H + p.r) p.y = -p.r
       })
 
-      // Draw small dots
       dots.forEach((d) => {
         ctx.beginPath()
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(186, 117, 23, ${d.opacity})`
+        ctx.fillStyle = isDark
+          ? `rgba(186, 117, 23, ${d.opacity * 0.6})`
+          : `rgba(186, 117, 23, ${d.opacity})`
         ctx.fill()
 
         d.x += d.dx
         d.y += d.dy
-
         if (d.x < 0) d.x = W
         if (d.x > W) d.x = 0
         if (d.y < 0) d.y = H
@@ -115,7 +126,7 @@ export function AnimatedBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full pointer-events-none"
-      style={{ zIndex: 0, opacity: 1 }}
+      style={{ zIndex: 0 }}
     />
   )
 }
